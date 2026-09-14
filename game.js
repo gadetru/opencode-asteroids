@@ -179,6 +179,7 @@ class Ship {
     this.dead          = false;
     this.speedMultiplier = 1;
     this.speedBoostTimer = 0;
+    this.tripleShotTimer = 0;
   }
 
   update(dt) {
@@ -191,6 +192,10 @@ class Ship {
         this.speedMultiplier = 1;
         this.speedBoostTimer = 0;
       }
+    }
+    if (this.tripleShotTimer > 0) {
+      this.tripleShotTimer -= dt;
+      if (this.tripleShotTimer <= 0) this.tripleShotTimer = 0;
     }
 
     const ROT   = 3.5;   // rad/s
@@ -218,12 +223,24 @@ class Ship {
     const NOSE = 21;
     const ox = this.x + Math.cos(this.angle) * NOSE;
     const oy = this.y + Math.sin(this.angle) * NOSE;
+    if (this.tripleShotTimer > 0) {
+      const SPREAD = 0.12;
+      return [
+        new Bullet(ox, oy, this.angle - SPREAD),
+        new Bullet(ox, oy, this.angle),
+        new Bullet(ox, oy, this.angle + SPREAD),
+      ];
+    }
     return [new Bullet(ox, oy, this.angle)];
   }
 
   activateSpeedBoost() {
     this.speedMultiplier = 2;
     this.speedBoostTimer = 5;
+  }
+
+  activateTripleShot() {
+    this.tripleShotTimer = 5;
   }
 
   draw() {
@@ -356,6 +373,70 @@ class PowerUp {
   }
 }
 
+// ── TripleShotPowerUp ───────────────────────────────────────────────────────
+class TripleShotPowerUp {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.radius = 12;
+    this.ttl = 8;
+    this.dead = false;
+    const angle = rand(0, Math.PI * 2);
+    const speed = rand(20, 50);
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+  }
+
+  update(dt) {
+    this.x = wrap(this.x + this.vx * dt, W);
+    this.y = wrap(this.y + this.vy * dt, H);
+    this.ttl -= dt;
+    if (this.ttl <= 0) this.dead = true;
+  }
+
+  draw() {
+    const alpha = this.ttl < 2 ? this.ttl / 2 : 1;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.fillStyle = `rgba(255, 80, 0, ${(alpha * 0.35).toFixed(2)})`;
+    ctx.strokeStyle = `rgba(255, 80, 0, ${alpha.toFixed(2)})`;
+    ctx.lineWidth = 2;
+
+    // Three narrow projectiles (abanico estrecho)
+    ctx.beginPath();
+    ctx.moveTo(-2.5, 10);
+    ctx.lineTo(0, -10);
+    ctx.lineTo(2.5, 10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(-6.5, 8);
+    ctx.lineTo(-3.5, -8);
+    ctx.lineTo(-0.5, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0.5, 8);
+    ctx.lineTo(3.5, -8);
+    ctx.lineTo(6.5, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Glow circle
+    ctx.beginPath();
+    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255, 80, 0, ${(alpha * 0.4).toFixed(2)})`;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+}
+
 // ── Estado del juego ──────────────────────────────────────────────────────────
 let ship, bullets, asteroids, particles, powerUps;
 let score, lives, level;
@@ -402,7 +483,11 @@ function nextLevel() {
 function maybeSpawnPowerUp(x, y) {
   if (powerUps.length >= 1) return;
   if (Math.random() < 0.12) {
-    powerUps.push(new PowerUp(x, y));
+    if (Math.random() < 0.5) {
+      powerUps.push(new PowerUp(x, y));
+    } else {
+      powerUps.push(new TripleShotPowerUp(x, y));
+    }
   }
 }
 
@@ -499,7 +584,11 @@ function update(dt) {
   powerUps.forEach(p => p.update(dt));
   for (const p of powerUps) {
     if (!p.dead && dist(ship, p) < ship.radius + p.radius) {
-      ship.activateSpeedBoost();
+      if (p instanceof TripleShotPowerUp) {
+        ship.activateTripleShot();
+      } else {
+        ship.activateSpeedBoost();
+      }
       p.dead = true;
     }
   }
@@ -548,6 +637,15 @@ function drawHUD() {
     ctx.font = '13px monospace';
     ctx.textAlign = 'left';
     ctx.fillText(`⚡ VELOCIDAD: ${ship.speedBoostTimer.toFixed(1)}s`, 14, 48);
+  }
+
+  // Triple shot indicator
+  if (ship.tripleShotTimer > 0) {
+    ctx.fillStyle = '#f50';
+    ctx.font = '13px monospace';
+    ctx.textAlign = 'left';
+    const yOff = ship.speedBoostTimer > 0 ? 62 : 48;
+    ctx.fillText(`-> TRIPLE SHOT: ${ship.tripleShotTimer.toFixed(1)}s`, 14, yOff);
   }
 }
 
