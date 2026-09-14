@@ -43,3 +43,5 @@ Luego visita `http://localhost:3000`.
 - 3 vidas con invencibilidad temporal al reaparecer (parpadeo)
 - Asteroides se parten en fragmentos más pequeños al ser destruidos
 - Partículas de explosión al destruir asteroides
+- Power-up velocidad (⚡): duplica la velocidad de la nave durante 5 s
+- Power-up escudo (cian): protege la nave de hasta 3 impactos de asteroides; cada impacto destruye y parte el asteroide sin perder vida
