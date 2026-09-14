@@ -29,6 +29,24 @@ Luego visita `http://localhost:3000`.
 | `←` `→`   | Rotar nave |
 | `↑`       | Propulsar  |
 | `Espacio` | Disparar   |
+| `Tab`     | Abrir selector de skins |
+| `←` `→` en selector | Cambiar skin |
+| `Enter` en selector | Seleccionar skin |
+| `Esc` en selector | Cerrar sin cambiar |
+
+## Skins de nave
+
+Presiona **Tab** durante el juego para abrir el selector de skins. Hay 5 disponibles:
+
+| Skin | Descripción |
+| ---- | ----------- |
+| **Classic** | Blanco estándar |
+| **Neon** | Cintilante cian con brillo |
+| **Infierno** | Naranja rojo con fuego |
+| **Frost** | Azul helado con resplandor |
+| **Phantom** | Verde fantasma con brillo |
+
+La selección se guarda automáticamente en `localStorage`.
 
 ## Puntuación
 
@@ -43,3 +61,5 @@ Luego visita `http://localhost:3000`.
 - 3 vidas con invencibilidad temporal al reaparecer (parpadeo)
 - Asteroides se parten en fragmentos más pequeños al ser destruidos
 - Partículas de explosión al destruir asteroides
+- 5 skins de nave seleccionables con Tab
+- Selección persistida en localStorage

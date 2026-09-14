@@ -12,7 +12,7 @@ const justPressed = {};
 window.addEventListener('keydown', e => {
   justPressed[e.code] = !keys[e.code];
   keys[e.code] = true;
-  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code))
+  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code))
     e.preventDefault();
 });
 window.addEventListener('keyup', e => { keys[e.code] = false; });
@@ -28,6 +28,19 @@ const wrap  = (v, max) => ((v % max) + max) % max;
 const dist  = (a, b)   => Math.hypot(a.x - b.x, a.y - b.y);
 const rand  = (min, max) => min + Math.random() * (max - min);
 const randInt = (min, max) => Math.floor(rand(min, max + 1));
+
+// ── Skins ─────────────────────────────────────────────────────────────
+const SKINS = [
+  { name: 'Classic',  color: '#ffffff', engine: 'rgba(255,130,0,0.85)',  glow: null,    verts: [[20,0],[-12,-9],[-7,0],[-12,9]],        radius: 12, engineX: -8 },
+  { name: 'Wingman', color: '#ff8844', engine: 'rgba(255,100,0,0.85)',   glow: 'rgba(255,136,68,0.35)', verts: [[22,0],[-16,-10],[-10,-5],[-8,0],[-10,5],[-16,10]], radius: 15, engineX: -9 },
+  { name: 'Viper',   color: '#88ccff', engine: 'rgba(80,160,255,0.85)',  glow: 'rgba(136,204,255,0.35)', verts: [[26,0],[-5,-4],[-10,0],[-5,4]],          radius: 11, engineX: -7 },
+  { name: 'Heavy',   color: '#cc88ff', engine: 'rgba(180,100,255,0.85)', glow: 'rgba(204,136,255,0.35)', verts: [[16,0],[-14,-12],[-10,-12],[-10,12],[-14,12]], radius: 16, engineX: -11 },
+  { name: 'Fighter', color: '#ffcc00', engine: 'rgba(255,200,0,0.85)',  glow: 'rgba(255,204,0,0.35)', verts: [[22,0],[-6,-6],[-14,-12],[-14,12],[-6,6]], radius: 13, engineX: -7 },
+];
+
+let currentSkinIndex = parseInt(localStorage.getItem('asteroidSkin') || '0');
+let skinSelectionActive = false;
+let skinSelIndex = currentSkinIndex;
 
 // ── Bullet ────────────────────────────────────────────────────────────────────
 class Bullet {
@@ -164,19 +177,23 @@ class FastAsteroid extends Asteroid {
 
 // ── Ship ──────────────────────────────────────────────────────────────────────
 class Ship {
-  constructor() { this.reset(); }
+  constructor(skinIndex) {
+    this.skinIndex = skinIndex !== undefined ? skinIndex : currentSkinIndex;
+    this.reset();
+  }
 
   reset() {
-    this.x      = W / 2;
-    this.y      = H / 2;
-    this.angle  = -Math.PI / 2;
-    this.vx     = 0;
-    this.vy     = 0;
-    this.radius = 12;
-    this.thrusting     = false;
-    this.invincible    = 3;
+    const skin = SKINS[this.skinIndex] || SKINS[0];
+    this.x = W / 2;
+    this.y = H / 2;
+    this.angle = -Math.PI / 2;
+    this.vx = 0;
+    this.vy = 0;
+    this.radius = skin.radius;
+    this.thrusting = false;
+    this.invincible = 3;
     this.shootCooldown = 0;
-    this.dead          = false;
+    this.dead = false;
     this.speedMultiplier = 1;
     this.speedBoostTimer = 0;
   }
@@ -215,6 +232,7 @@ class Ship {
   tryShoot() {
     if (this.shootCooldown > 0 || this.dead) return [];
     this.shootCooldown = 0.2;
+    const skin = SKINS[this.skinIndex] || SKINS[0];
     const NOSE = 21;
     const ox = this.x + Math.cos(this.angle) * NOSE;
     const oy = this.y + Math.sin(this.angle) * NOSE;
@@ -228,41 +246,48 @@ class Ship {
 
   draw() {
     if (this.dead) return;
-    // Parpadeo durante invencibilidad de reaparición
     if (this.invincible > 0 && Math.floor(this.invincible * 8) % 2 === 0) return;
 
     const boostActive = this.speedBoostTimer > 0;
-    const shipColor = boostActive ? '#0ff' : '#fff';
+    const skin = SKINS[this.skinIndex] || SKINS[0];
+    const shipColor = boostActive ? '#0ff' : skin.color;
+    const engineColor = boostActive ? 'rgba(0, 255, 255, 0.85)' : skin.engine;
+    const engineX = skin.engineX;
 
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
     ctx.strokeStyle = shipColor;
-    ctx.lineWidth   = 1.5;
-    ctx.lineJoin    = 'round';
+    ctx.fillStyle = boostActive ? 'rgba(0, 255, 255, 0.15)' : `${skin.color}22`;
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
 
-    // Silueta clásica: triángulo con muesca trasera
+    if (skin.glow) {
+      ctx.shadowColor = skin.glow;
+      ctx.shadowBlur = 15;
+    }
+
     ctx.beginPath();
-    ctx.moveTo( 20,  0);   // nariz
-    ctx.lineTo(-12, -9);   // ala izquierda
-    ctx.lineTo( -7,  0);   // muesca trasera
-    ctx.lineTo(-12,  9);   // ala derecha
+    ctx.moveTo(skin.verts[0][0], skin.verts[0][1]);
+    for (let i = 1; i < skin.verts.length; i++)
+      ctx.lineTo(skin.verts[i][0], skin.verts[i][1]);
     ctx.closePath();
+    ctx.fill();
     ctx.stroke();
 
-    // Llama del propulsor
+    ctx.shadowBlur = 0;
+
     if (this.thrusting && Math.random() > 0.35) {
       ctx.beginPath();
-      ctx.moveTo(-8, -4);
-      ctx.lineTo(-8 - rand(6, 14), 0);
-      ctx.lineTo(-8,  4);
-      ctx.strokeStyle = boostActive ? 'rgba(0, 255, 255, 0.85)' : 'rgba(255, 130, 0, 0.85)';
+      ctx.moveTo(engineX, -4);
+      ctx.lineTo(engineX - rand(6, 14), 0);
+      ctx.lineTo(engineX, 4);
+      ctx.strokeStyle = engineColor;
       ctx.stroke();
     }
 
     ctx.restore();
 
-    // Trail de partículas cuando boost activo
     if (boostActive && this.thrusting) {
       for (let i = 0; i < 2; i++) {
         const tx = this.x - Math.cos(this.angle) * rand(10, 18);
@@ -376,7 +401,7 @@ function spawnAsteroids(count) {
 }
 
 function initGame() {
-  ship          = new Ship();
+  ship = new Ship(currentSkinIndex);
   bullets   = [];
   asteroids = [];
   particles = [];
@@ -456,8 +481,32 @@ function update(dt) {
   }
 
   // Disparar
-  if (pressed('Space')) {
+  if (pressed('Space') && !skinSelectionActive) {
     bullets.push(...ship.tryShoot());
+  }
+
+  // Selector de skin
+  if (pressed('Tab')) {
+    skinSelectionActive = !skinSelectionActive;
+    if (skinSelectionActive) skinSelIndex = ship.skinIndex;
+  }
+
+  if (skinSelectionActive) {
+    if (pressed('ArrowLeft') || pressed('KeyA')) {
+      skinSelIndex = (skinSelIndex - 1 + SKINS.length) % SKINS.length;
+    }
+    if (pressed('ArrowRight') || pressed('KeyD')) {
+      skinSelIndex = (skinSelIndex + 1) % SKINS.length;
+    }
+    if (pressed('Enter') || pressed('Space')) {
+      currentSkinIndex = skinSelIndex;
+      ship.skinIndex = currentSkinIndex;
+      localStorage.setItem('asteroidSkin', currentSkinIndex);
+      skinSelectionActive = false;
+    }
+    if (pressed('Escape')) {
+      skinSelectionActive = false;
+    }
   }
 
   ship.update(dt);
@@ -542,23 +591,77 @@ function drawHUD() {
   for (let i = 0; i < lives; i++)
     drawLifeIcon(W - 16 - i * 22, 18);
 
-  // Speed boost indicator
+  ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '12px monospace';
+  ctx.fillText(`SKIN: ${SKINS[ship.skinIndex].name}`, 14, 44);
+
   if (ship.speedBoostTimer > 0) {
     ctx.fillStyle = '#0ff';
     ctx.font = '13px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText(`⚡ VELOCIDAD: ${ship.speedBoostTimer.toFixed(1)}s`, 14, 48);
+    ctx.fillText(`⚡ VELOCIDAD: ${ship.speedBoostTimer.toFixed(1)}s`, 14, 62);
   }
 }
 
-function drawOverlay(title, sub) {
-  ctx.textAlign   = 'center';
-  ctx.fillStyle   = '#fff';
-  ctx.font        = 'bold 46px monospace';
-  ctx.fillText(title, W / 2, H / 2 - 18);
-  ctx.font        = '18px monospace';
-  ctx.fillStyle   = 'rgba(255,255,255,0.65)';
-  ctx.fillText(sub, W / 2, H / 2 + 22);
+function drawSkinOverlay() {
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.78)';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 30px monospace';
+  ctx.fillText('SELECCIÓN DE NAVE', W / 2, 70);
+
+  const count = SKINS.length;
+  const spacing = W / (count + 1);
+
+  for (let i = 0; i < count; i++) {
+    const skin = SKINS[i];
+    const x = spacing * (i + 1);
+    const y = H / 2 - 10;
+    const isSelected = i === skinSelIndex;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(-Math.PI / 5);
+
+    if (skin.glow) {
+      ctx.shadowColor = skin.glow;
+      ctx.shadowBlur = isSelected ? 25 : 12;
+    }
+
+    ctx.fillStyle = isSelected ? `${skin.color}33` : `${skin.color}18`;
+    ctx.strokeStyle = isSelected ? '#fff' : skin.color;
+    ctx.lineWidth = isSelected ? 2.5 : 1.5;
+
+    ctx.beginPath();
+    ctx.moveTo(skin.verts[0][0], skin.verts[0][1]);
+    for (let j = 1; j < skin.verts.length; j++)
+      ctx.lineTo(skin.verts[j][0], skin.verts[j][1]);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    ctx.fillStyle = isSelected ? '#fff' : 'rgba(255,255,255,0.45)';
+    ctx.font = isSelected ? 'bold 15px monospace' : '13px monospace';
+    ctx.fillText(skin.name, x, y + 55);
+
+    if (isSelected) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(x - 28, y - 28, 56, 56);
+      ctx.setLineDash([]);
+    }
+  }
+
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('← → Cambiar   ENTER Seleccionar   ESC Cerrar', W / 2, H - 18);
 }
 
 function draw() {
@@ -572,6 +675,10 @@ function draw() {
   ship.draw();
 
   drawHUD();
+
+  if (skinSelectionActive) {
+    drawSkinOverlay();
+  }
 
   if (state === 'gameover')
     drawOverlay('GAME OVER', `PUNTAJE: ${score}   —   ESPACIO PARA REINICIAR`);
