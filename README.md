@@ -29,6 +29,24 @@ Luego visita `http://localhost:3000`.
 | `←` `→`   | Rotar nave |
 | `↑`       | Propulsar  |
 | `Espacio` | Disparar   |
+| `Tab`     | Abrir selector de skins |
+| `←` `→` en selector | Cambiar skin |
+| `Enter` en selector | Seleccionar skin |
+| `Esc` en selector | Cerrar sin cambiar |
+
+## Skins de nave
+
+Presiona **Tab** durante el juego para abrir el selector de skins. Hay 5 disponibles:
+
+| Skin | Descripción |
+| ---- | ----------- |
+| **Classic** | Blanco estándar |
+| **Neon** | Cintilante cian con brillo |
+| **Infierno** | Naranja rojo con fuego |
+| **Frost** | Azul helado con resplandor |
+| **Phantom** | Verde fantasma con brillo |
+
+La selección se guarda automáticamente en `localStorage`.
 
 ## Puntuación
 
@@ -45,3 +63,5 @@ Luego visita `http://localhost:3000`.
 - Partículas de explosión al destruir asteroides
 - Power-up velocidad (⚡): duplica la velocidad de la nave durante 5 s
 - Power-up escudo (cian): protege la nave de hasta 3 impactos de asteroides; cada impacto destruye y parte el asteroide sin perder vida
+- 5 skins de nave seleccionables con Tab
+- Selección persistida en localStorage
