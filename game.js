@@ -118,6 +118,50 @@ class Asteroid {
   }
 }
 
+// ── FastAsteroid ─────────────────────────────────────────────────────────────
+class FastAsteroid extends Asteroid {
+  constructor(x, y, size = 3) {
+    super(x, y, size);
+    this.vx *= 2.25;
+    this.vy *= 2.25;
+    this.ttl = 5;
+    this.trail = [];
+  }
+
+  update(dt) {
+    this.trail.push({ x: this.x, y: this.y });
+    const prevX = this.x;
+    const prevY = this.y;
+    super.update(dt);
+    if (Math.abs(this.x - prevX) > W / 2 || Math.abs(this.y - prevY) > H / 2) {
+      this.trail = [];
+    } else {
+      for (const t of this.trail) t.age = (t.age || 0) + dt;
+      this.trail = this.trail.filter(t => t.age < 1);
+    }
+    this.ttl -= dt;
+    if (this.ttl <= 0) this.dead = true;
+  }
+
+  draw() {
+    const len = this.trail.length;
+    if (len > 1) {
+      for (let i = 1; i < len; i++) {
+        const a = this.trail[i - 1];
+        const b = this.trail[i];
+        const alpha = (1 - b.age).toFixed(2);
+        ctx.strokeStyle = `rgba(255, 200, 50, ${alpha})`;
+        ctx.lineWidth = this.radius * 0.1;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+    }
+    super.draw();
+  }
+}
+
 // ── Ship ──────────────────────────────────────────────────────────────────────
 class Ship {
   constructor() { this.reset(); }
@@ -317,6 +361,7 @@ let ship, bullets, asteroids, particles, powerUps;
 let score, lives, level;
 let state;      // 'playing' | 'dead' | 'gameover'
 let deadTimer;
+let fastAsteroidTimer;
 
 function spawnAsteroids(count) {
   const SAFE_DIST = 130;
@@ -340,6 +385,7 @@ function initGame() {
   lives  = 3;
   level  = 1;
   state  = 'playing';
+  fastAsteroidTimer = rand(6, 12);
   spawnAsteroids(4);
 }
 
@@ -349,6 +395,7 @@ function nextLevel() {
   particles = [];
   powerUps  = [];
   ship.reset();
+  fastAsteroidTimer = rand(6, 12);
   spawnAsteroids(3 + level);
 }
 
@@ -356,6 +403,21 @@ function maybeSpawnPowerUp(x, y) {
   if (powerUps.length >= 1) return;
   if (Math.random() < 0.12) {
     powerUps.push(new PowerUp(x, y));
+  }
+}
+
+function maybeSpawnFastAsteroid(dt) {
+  fastAsteroidTimer -= dt;
+  if (fastAsteroidTimer <= 0) {
+    fastAsteroidTimer = rand(6, 12);
+    const SAFE_DIST = 130;
+    let x, y;
+    do {
+      x = rand(0, W);
+      y = rand(0, H);
+    } while (Math.hypot(x - W / 2, y - H / 2) < SAFE_DIST);
+    const size = randInt(2, 3);
+    asteroids.push(new FastAsteroid(x, y, size));
   }
 }
 
@@ -442,6 +504,8 @@ function update(dt) {
     }
   }
   powerUps = powerUps.filter(p => !p.dead);
+
+  maybeSpawnFastAsteroid(dt);
 
   // Nivel completado
   if (asteroids.length === 0) nextLevel();

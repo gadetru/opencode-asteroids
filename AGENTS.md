@@ -7,9 +7,10 @@ HTML5 Asteroids clone — a single-file vanilla JS game on an 800×600 Canvas. N
 ## Files
 
 - `index.html` — page shell, loads `game.js`
-- `game.js` — all game logic (~423 lines), ES6+ classes: `Ship`, `Asteroid`, `Bullet`, `Particle`
+- `game.js` — all game logic (~586 lines), ES6+ classes: `Ship`, `Asteroid`, `FastAsteroid`, `Bullet`, `Particle`, `PowerUp`
 - `favicon.svg` — game icon
 - `README.md` — Spanish-language description and controls
+- `Ideas-todo.md` — pendientes y ideas de desarrollo
 
 ## Running
 
@@ -30,6 +31,8 @@ Then visit `http://localhost:3000`.
 - **Toroidal wrapping**: `wrap(v, max)` handles edge crossing on both axes.
 - **Asteroid splitting**: size 3 → 2 → 1 (size 1 is immovable). Points per size: 20/50/100.
 - **Ship invincibility**: 3 seconds after spawn/rebirth, rendered as blinking (draw skips every other frame).
+- **FastAsteroid**: extends `Asteroid`, speed ×2.25, TTL 5s, trail (1s, fading amber), spawns randomly every 6-12s, sizes 2-3.
+- **PowerUp**: lightning bolt icon, 8s TTL, gives ship 5s speed boost (×2).
 
 ## Controls
 
