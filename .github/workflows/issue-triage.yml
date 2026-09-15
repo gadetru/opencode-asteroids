@@ -1,0 +1,88 @@
+name: issue-triage
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  triage:
+    if: contains(github.event.comment.body, '/issue-triage')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      id-token: write
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body || '';
+
+            // Detect category based on keywords
+            function detectCategory(text) {
+              const lower = text.toLowerCase();
+              const bugKeywords = ['error', 'crash', 'no funciona', 'fallo', 'bug', 'problema', 'rompe', 'frozen', 'stuck', 'broken'];
+              const featureKeywords = ['feature', 'nueva función', 'mejora', 'sugerencia', 'añadir', 'agregar', 'nuevo', 'idea'];
+              const questionKeywords = ['pregunta', 'cómo', 'how to', '¿?', 'duda', 'ayuda', 'help'];
+
+              if (bugKeywords.some(k => lower.includes(k))) return 'bug';
+              if (featureKeywords.some(k => lower.includes(k))) return 'feature';
+              if (questionKeywords.some(k => lower.includes(k))) return 'question';
+              return 'question';
+            }
+
+            const category = detectCategory(body);
+            const labels = [category];
+            const now = new Date().toISOString().split('T')[0];
+
+            // Build reformatted body preserving original content
+            const newBody = [
+              '## Descripción',
+              '',
+              body,
+              '',
+              '---',
+              '',
+              '## Información adicional',
+              '',
+              `- **Categoría detectada:** ${category}`,
+              `- **Fecha de creación:** ${now}`,
+              `- **Autor:** @${issue.user.login}`,
+              '',
+              '---',
+              '',
+              '## Contexto del proyecto',
+              '',
+              '- **Juego:** Asteroids (HTML5 Canvas, vanilla JS)',
+              '- **Archivo principal:** game.js',
+              '- **Plataforma:** Navegador web'
+            ].join('\n');
+
+            // Update issue body
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: newBody
+            });
+
+            // Add labels
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: labels
+              });
+            } catch (e) {
+              console.log('Labels might not exist, continuing...');
+            }
+
+            // React to confirm
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: `✅ **Issue triage completado**\n\n- Categoría: **${category}**\n- Labels asignadas: \`${labels.join(', ')}\`\n- Formato actualizado con información adicional`
+            });
