@@ -2,8 +2,8 @@
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const W = 800;
-const H = 600;
+const W = 1000;
+const H = 750;
 
 // ── Input ─────────────────────────────────────────────────────────────────────
 const keys = {};
@@ -31,12 +31,79 @@ const randInt = (min, max) => Math.floor(rand(min, max + 1));
 
 // ── Skins ─────────────────────────────────────────────────────────────
 const SKINS = [
-  { name: 'Classic',  color: '#ffffff', engine: 'rgba(255,130,0,0.85)',  glow: null,    verts: [[20,0],[-12,-9],[-7,0],[-12,9]],        radius: 12, engineX: -8 },
-  { name: 'Wingman', color: '#ff8844', engine: 'rgba(255,100,0,0.85)',   glow: 'rgba(255,136,68,0.35)', verts: [[22,0],[-16,-10],[-10,-5],[-8,0],[-10,5],[-16,10]], radius: 15, engineX: -9 },
-  { name: 'Viper',   color: '#88ccff', engine: 'rgba(80,160,255,0.85)',  glow: 'rgba(136,204,255,0.35)', verts: [[26,0],[-5,-4],[-10,0],[-5,4]],          radius: 11, engineX: -7 },
-  { name: 'Heavy',   color: '#cc88ff', engine: 'rgba(180,100,255,0.85)', glow: 'rgba(204,136,255,0.35)', verts: [[16,0],[-14,-12],[-10,-12],[-10,12],[-14,12]], radius: 16, engineX: -11 },
-  { name: 'Fighter', color: '#ffcc00', engine: 'rgba(255,200,0,0.85)',  glow: 'rgba(255,204,0,0.35)', verts: [[22,0],[-6,-6],[-14,-12],[-14,12],[-6,6]], radius: 13, engineX: -7 },
-  { name: 'Titan',   color: '#00ff44', engine: 'rgba(0,255,68,0.85)',   glow: 'rgba(0,255,68,0.35)', verts: [[40,0],[-24,-18],[-14,0],[-24,18]], radius: 24, engineX: -16, pointMultiplier: 2 },
+  {
+    name: 'Phantom',
+    color: '#00e5ff',
+    engine: 'rgba(0, 229, 255, 0.85)',
+    glow: 'rgba(0, 229, 255, 0.4)',
+    verts: [
+      [24, 0], [18, -4], [12, -3], [6, -8], [2, -6],
+      [-4, -10], [-10, -8], [-14, -4], [-14, 0],
+      [-14, 4], [-10, 8], [-4, 10], [2, 6], [6, 8],
+      [12, 3], [18, 4]
+    ],
+    radius: 14,
+    engineX: -11
+  },
+  {
+    name: 'Scorpion',
+    color: '#ff1744',
+    engine: 'rgba(255, 23, 68, 0.85)',
+    glow: 'rgba(255, 23, 68, 0.4)',
+    verts: [
+      [22, 0], [16, -3], [10, -2], [6, -6],
+      [2, -12], [-2, -10], [-6, -14], [-10, -8],
+      [-12, -2], [-12, 2], [-10, 8], [-6, 14],
+      [-2, 10], [2, 12], [6, 6], [10, 2], [16, 3]
+    ],
+    radius: 15,
+    engineX: -10
+  },
+  {
+    name: 'Blade',
+    color: '#ffc400',
+    engine: 'rgba(255, 196, 0, 0.85)',
+    glow: 'rgba(255, 196, 0, 0.4)',
+    verts: [
+      [26, 0], [20, -2], [14, -1], [8, -3],
+      [4, -2], [0, -6], [-4, -5], [-8, -3],
+      [-12, -1], [-14, 0],
+      [-12, 1], [-8, 3], [-4, 5], [0, 6],
+      [4, 2], [8, 1], [14, 1], [20, 2]
+    ],
+    radius: 13,
+    engineX: -10
+  },
+  {
+    name: 'Guardian',
+    color: '#00e676',
+    engine: 'rgba(0, 230, 118, 0.85)',
+    glow: 'rgba(0, 230, 118, 0.4)',
+    verts: [
+      [18, 0], [14, -4], [10, -3], [6, -8],
+      [2, -6], [-2, -10], [-6, -10], [-10, -8],
+      [-14, -4], [-16, 0],
+      [-14, 4], [-10, 8], [-6, 10], [-2, 10],
+      [2, 6], [6, 8], [10, 3], [14, 4]
+    ],
+    radius: 16,
+    engineX: -13
+  },
+  {
+    name: 'Spectre',
+    color: '#d500f9',
+    engine: 'rgba(213, 0, 249, 0.85)',
+    glow: 'rgba(213, 0, 249, 0.4)',
+    verts: [
+      [22, 0], [16, -3], [10, -5], [6, -10],
+      [2, -8], [-2, -12], [-6, -8], [-10, -6],
+      [-14, -2], [-14, 2],
+      [-10, 6], [-6, 8], [-2, 12], [2, 8],
+      [6, 10], [10, 5], [16, 3]
+    ],
+    radius: 14,
+    engineX: -11
+  }
 ];
 
 let currentSkinIndex = parseInt(localStorage.getItem('asteroidSkin') || '0');
@@ -733,11 +800,11 @@ function update(dt) {
 }
 
 // ── Draw ──────────────────────────────────────────────────────────────────────
-function drawLifeIcon(x, y) {
+function drawLifeIcon(x, y, color) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(-Math.PI / 2);
-  ctx.strokeStyle = '#fff';
+  ctx.strokeStyle = color || '#fff';
   ctx.lineWidth   = 1.2;
   ctx.lineJoin    = 'round';
   ctx.beginPath();
@@ -760,8 +827,10 @@ function drawHUD() {
   ctx.textAlign = 'center';
   ctx.fillText(`NIVEL ${level}`, W / 2, 26);
 
-  for (let i = 0; i < lives; i++)
-    drawLifeIcon(W - 16 - i * 22, 18);
+  for (let i = 0; i < lives; i++) {
+    const skinColor = SKINS[ship.skinIndex] ? SKINS[ship.skinIndex].color : '#fff';
+    drawLifeIcon(W - 16 - i * 22, 18, skinColor);
+  }
 
   // Skin name
   ctx.textAlign = 'left';
