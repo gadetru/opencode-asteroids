@@ -1,11 +1,10 @@
 name: issue-triage
 on:
-  issue_comment:
-    types: [created]
+  issues:
+    types: [opened]
 
 jobs:
   triage:
-    if: contains(github.event.comment.body, '/issue-triage')
     runs-on: ubuntu-latest
     permissions:
       issues: write
