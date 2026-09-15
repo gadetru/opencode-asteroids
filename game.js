@@ -36,6 +36,7 @@ const SKINS = [
   { name: 'Viper',   color: '#88ccff', engine: 'rgba(80,160,255,0.85)',  glow: 'rgba(136,204,255,0.35)', verts: [[26,0],[-5,-4],[-10,0],[-5,4]],          radius: 11, engineX: -7 },
   { name: 'Heavy',   color: '#cc88ff', engine: 'rgba(180,100,255,0.85)', glow: 'rgba(204,136,255,0.35)', verts: [[16,0],[-14,-12],[-10,-12],[-10,12],[-14,12]], radius: 16, engineX: -11 },
   { name: 'Fighter', color: '#ffcc00', engine: 'rgba(255,200,0,0.85)',  glow: 'rgba(255,204,0,0.35)', verts: [[22,0],[-6,-6],[-14,-12],[-14,12],[-6,6]], radius: 13, engineX: -7 },
+  { name: 'Titan',   color: '#00ff44', engine: 'rgba(0,255,68,0.85)',   glow: 'rgba(0,255,68,0.35)', verts: [[40,0],[-24,-18],[-14,0],[-24,18]], radius: 24, engineX: -16, pointMultiplier: 2 },
 ];
 
 let currentSkinIndex = parseInt(localStorage.getItem('asteroidSkin') || '0');
@@ -675,7 +676,8 @@ function update(dt) {
       if (!a.dead && !b.dead && dist(b, a) < a.radius) {
         b.dead = true;
         a.dead = true;
-        score += POINTS[a.size];
+        const skin = SKINS[ship.skinIndex] || SKINS[0];
+        score += POINTS[a.size] * (skin.pointMultiplier || 1);
         explode(a.x, a.y, a.size * 5);
         newAsteroids.push(...a.split());
         maybeSpawnPowerUp(a.x, a.y);
@@ -693,7 +695,8 @@ function update(dt) {
         if (ship.shield > 0) {
           // El escudo absorbe el golpe: el asteroide se divide
           // como si hubiese sido alcanzado por una bala.
-          score += POINTS[a.size];
+          const skinShield = SKINS[ship.skinIndex] || SKINS[0];
+          score += POINTS[a.size] * (skinShield.pointMultiplier || 1);
           explode(a.x, a.y, a.size * 5);
           newAsteroids.push(...a.split());
           ship.takeShieldHit();
@@ -837,10 +840,11 @@ function drawSkinOverlay() {
     ctx.fillText(skin.name, x, y + 55);
 
     if (isSelected) {
+      const boxSize = Math.max(56, skin.radius * 2.6);
       ctx.strokeStyle = 'rgba(255,255,255,0.6)';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([4, 3]);
-      ctx.strokeRect(x - 28, y - 28, 56, 56);
+      ctx.strokeRect(x - boxSize / 2, y - boxSize / 2, boxSize, boxSize);
       ctx.setLineDash([]);
     }
   }
